@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LiteChat 公共聊天室</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: #eef2f7;
+      color: #111827;
+    }
+
+    .app {
+      max-width: 1100px;
+      height: 100vh;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      border-left: 1px solid #e5e7eb;
+      border-right: 1px solid #e5e7eb;
+    }
+
+    .topbar {
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: #111827;
+      color: white;
+    }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+      font-size: 14px;
+    }
+
+    .btn.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn.danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn.small {
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .chat {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .side {
+      width: 250px;
+      border-left: 1px solid #e5e7eb;
+      background: white;
+      padding: 14px;
+      overflow-y: auto;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+    }
+
+    .msg-row {
+      display: flex;
+      margin-bottom: 14px;
+    }
+
+    .msg-row.me {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width: 68%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+      word-break: break-word;
+    }
+
+    .msg-row.me .bubble {
+      background: #dbeafe;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 5px;
+    }
+
+    .quote {
+      border-left: 3px solid #94a3b8;
+      background: rgba(148, 163, 184, 0.16);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 8px;
+      color: #475569;
+    }
+
+    .content {
+      font-size: 15px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .chat-img {
+      max-width: 220px;
+      max-height: 220px;
+      border-radius: 10px;
+      display: block;
+      margin-top: 4px;
+      cursor: pointer;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .recalled {
+      color: #64748b;
+      font-style: italic;
+      font-size: 14px;
+    }
+
+    .composer {
+      border-top: 1px solid #e5e7eb;
+      padding: 12px;
+      background: white;
+    }
+
+    .quote-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #475569;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    textarea {
+      flex: 1;
+      resize: none;
+      height: 48px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #2563eb;
+    }
+
+    .emoji-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .emoji-item {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      cursor: pointer;
+    }
+
+    .nickname-page {
+      height: 100vh;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #dbeafe, #f8fafc);
+    }
+
+    .nickname-card {
+      width: 360px;
+      background: white;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15);
+    }
+
+    .nickname-card h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+
+    .nickname-card p {
+      margin: 0 0 18px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .nickname-card input {
+      width: 100%;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      padding: 0 12px;
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 12px;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 760px) {
+      .side {
+        display: none;
+      }
+
+      .bubble {
+        max-width: 82%;
+      }
+
+      .topbar {
+        padding: 0 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="nicknamePage" class="nickname-page">
+    <div class="nickname-card">
+      <h1>进入 LiteChat</h1>
+      <p>不用注册，输入昵称即可进入公共聊天室。</p>
+      <input id="nicknameInput" placeholder="请输入昵称，例如：小杨" maxlength="24" />
+      <button class="btn" style="width:100%" onclick="saveNickname()">进入聊天室</button>
+    </div>
+  </div>
+
+  <div id="app" class="app" style="display:none">
+    <header class="topbar">
+      <div>
+        <div class="brand">LiteChat 公共聊天室</div>
+        <div class="status" id="statusText">连接中...</div>
+      </div>
+      <div class="user">
+        <span id="nicknameText"></span>
+        <button class="btn small secondary" onclick="changeNickname()">改昵称</button>
+      </div>
+    </header>
+
+    <div class="chat">
+      <main class="main">
+        <div id="messages" class="messages"></div>
+
+        <div class="composer">
+          <div id="quoteBar" class="quote-bar">
+            <span id="quoteText"></span>
+            <button class="btn small secondary" onclick="cancelQuote()">取消引用</button>
+          </div>
+
+          <div class="input-row">
+            <textarea id="messageInput" placeholder="输入消息，Enter 发送，Shift + Enter 换行"></textarea>
+            <input id="imageInput" type="file" accept="image/*" style="display:none" onchange="uploadImage()" />
+            <button class="btn secondary" onclick="document.getElementById('imageInput').click()">图片</button>
+            <button class="btn" onclick="sendText()">发送</button>
+          </div>
+        </div>
+      </main>
+
+      <aside class="side">
+        <h3>我的表情</h3>
+        <p style="font-size:13px;color:#64748b;">点击聊天图片下方“存表情”，会保存到当前浏览器。</p>
+        <button class="btn small danger" onclick="clearLocalHidden()">清空本地删除记录</button>
+        <div id="emojiList" class="emoji-list"></div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://wjhlzzjoczmxefrokmaz.supabase.co/rest/v1/';
+    const SUPABASE_ANON_KEY = 'sb_publishable_dp1dtmMyMFLSCWT0kwCFrg_j5n-EF80';
+
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const ROOM = 'public';
+    let nickname = localStorage.getItem('litechat_nickname') || '';
+    let clientId = localStorage.getItem('litechat_client_id') || '';
+    let quoteMessage = null;
+    let messagesCache = [];
+
+    if (!clientId) {
+      clientId = crypto.randomUUID();
+      localStorage.setItem('litechat_client_id', clientId);
+    }
+
+    function $(id) {
+      return document.getElementById(id);
+    }
+
+    function getHiddenIds() {
+      return JSON.parse(localStorage.getItem('litechat_hidden_ids') || '[]');
+    }
+
+    function setHiddenIds(ids) {
+      localStorage.setItem('litechat_hidden_ids', JSON.stringify(ids));
+    }
+
+    function getEmojis() {
+      return JSON.parse(localStorage.getItem('litechat_emojis') || '[]');
+    }
+
+    function setEmojis(list) {
+      localStorage.setItem('litechat_emojis', JSON.stringify(list));
+    }
+
+    function showApp() {
+      $('nicknamePage').style.display = 'none';
+      $('app').style.display = 'flex';
+      $('nicknameText').textContent = nickname;
+      loadMessages();
+      renderEmojis();
+      subscribeMessages();
+    }
+
+    function showNicknamePage() {
+      $('nicknamePage').style.display = 'flex';
+      $('app').style.display = 'none';
+    }
+
+    function saveNickname() {
+      const value = $('nicknameInput').value.trim();
+      if (!value) {
+        alert('请先输入昵称');
+        return;
+      }
+      nickname = value.slice(0, 24);
+      localStorage.setItem('litechat_nickname', nickname);
+      showApp();
+    }
+
+    function changeNickname() {
+      const value = prompt('请输入新昵称', nickname);
+      if (!value || !value.trim()) return;
+      nickname = value.trim().slice(0, 24);
+      localStorage.setItem('litechat_nickname', nickname);
+      $('nicknameText').textContent = nickname;
+    }
+
+    async function loadMessages() {
+      const { data, error } = await client
+        .from('messages')
+        .select('*')
+        .eq('room', ROOM)
+        .order('created_at', { ascending: true })
+        .limit(300);
+
+      if (error) {
+        console.error(error);
+        $('statusText').textContent = '连接失败：请检查 Supabase 配置';
+        return;
+      }
+
+      $('statusText').textContent = '已连接公共频道';
+      messagesCache = data || [];
+      renderMessages();
+    }
+
+    function subscribeMessages() {
+      client
+        .channel('litechat-public-room')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'messages',
+            filter: 'room=eq.public'
+          },
+          () => loadMessages()
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            $('statusText').textContent = '已连接公共频道';
+          }
+        });
+    }
+
+    function renderMessages() {
+      const box = $('messages');
+      const hiddenIds = getHiddenIds();
+      const visibleMessages = messagesCache.filter(m => !hiddenIds.includes(m.id));
+
+      box.innerHTML = visibleMessages.map(m => {
+        const isMe = m.sender_client_id === clientId;
+        const time = new Date(m.created_at).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        let body = '';
+
+        if (m.recalled) {
+          body = `<div class="recalled">该消息已撤回</div>`;
+        } else if (m.type === 'text') {
+          body = `<div class="content">${escapeHtml(m.content || '')}</div>`;
+        } else if (m.type === 'image' || m.type === 'emoji') {
+          body = `<img class="chat-img" src="${m.image_url}" onclick="window.open('${m.image_url}', '_blank')" />`;
+        }
+
+        const quote = m.quote_preview
+          ? `<div class="quote">引用 ${escapeHtml(m.quote_sender_name || '')}：${escapeHtml(m.quote_preview || '')}</div>`
+          : '';
+
+        const imageActions = (!m.recalled && (m.type === 'image' || m.type === 'emoji'))
+          ? `<button class="btn small secondary" onclick="saveEmoji('${m.image_url}')">存表情</button>`
+          : '';
+
+        const recallAction = isMe && !m.recalled
+          ? `<button class="btn small secondary" onclick="recallMessage('${m.id}')">撤回</button>`
+          : '';
+
+        return `
+          <div class="msg-row ${isMe ? 'me' : ''}">
+            <div class="bubble">
+              <div class="meta">${escapeHtml(m.sender_name)} · ${time}</div>
+              ${quote}
+              ${body}
+              <div class="actions">
+                <button class="btn small secondary" onclick="quoteById('${m.id}')">引用</button>
+                ${imageActions}
+                ${recallAction}
+                <button class="btn small danger" onclick="hideMessage('${m.id}')">删除</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendText() {
+      const input = $('messageInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      await sendMessage({
+        type: 'text',
+        content: text,
+        image_url: null
+      });
+
+      input.value = '';
+    }
+
+    async function sendMessage(payload) {
+      const row = {
+        room: ROOM,
+        sender_name: nickname,
+        sender_client_id: clientId,
+        type: payload.type,
+        content: payload.content,
+        image_url: payload.image_url,
+        quote_id: quoteMessage ? quoteMessage.id : null,
+        quote_sender_name: quoteMessage ? quoteMessage.sender_name : null,
+        quote_preview: quoteMessage ? getPreview(quoteMessage) : null
+      };
+
+      const { error } = await client.from('messages').insert(row);
+
+      if (error) {
+        console.error(error);
+        alert('发送失败，请检查 Supabase SQL 和 Key 是否正确');
+        return;
+      }
+
+      cancelQuote();
+    }
+
+    async function uploadImage() {
+      const fileInput = $('imageInput');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `public/${Date.now()}-${clientId}.${ext}`;
+
+      const { error } = await client.storage
+        .from('chat-images')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error(error);
+        alert('图片上传失败，请检查 chat-images bucket 和 storage policy');
+        fileInput.value = '';
+        return;
+      }
+
+      const { data } = client.storage
+        .from('chat-images')
+        .getPublicUrl(path);
+
+      await sendMessage({
+        type: 'image',
+        content: '[图片]',
+        image_url: data.publicUrl
+      });
+
+      fileInput.value = '';
+    }
+
+    function saveEmoji(url) {
+      const list = getEmojis();
+      if (!list.includes(url)) {
+        list.unshift(url);
+        setEmojis(list.slice(0, 60));
+      }
+      renderEmojis();
+    }
+
+    function renderEmojis() {
+      const list = getEmojis();
+      $('emojiList').innerHTML = list.map(url => {
+        return `<img class="emoji-item" src="${url}" onclick="sendEmoji('${url}')" />`;
+      }).join('');
+    }
+
+    async function sendEmoji(url) {
+      await sendMessage({
+        type: 'emoji',
+        content: '[表情]',
+        image_url: url
+      });
+    }
+
+    function quoteById(id) {
+      const msg = messagesCache.find(m => m.id === id);
+      if (!msg) return;
+      quoteMessage = msg;
+      $('quoteText').textContent = `引用 ${msg.sender_name}：${getPreview(msg)}`;
+      $('quoteBar').style.display = 'flex';
+      $('messageInput').focus();
+    }
+
+    function cancelQuote() {
+      quoteMessage = null;
+      $('quoteText').textContent = '';
+      $('quoteBar').style.display = 'none';
+    }
+
+    async function recallMessage(id) {
+      const msg = messagesCache.find(m => m.id === id);
+      if (!msg) return;
+
+      if (msg.sender_client_id !== clientId) {
+        alert('只能撤回当前浏览器发送的消息');
+        return;
+      }
+
+      const { error } = await client
+        .from('messages')
+        .update({
+          recalled: true,
+          content: null,
+          image_url: null
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error(error);
+        alert('撤回失败');
+      }
+    }
+
+    function hideMessage(id) {
+      const ids = getHiddenIds();
+      if (!ids.includes(id)) {
+        ids.push(id);
+        setHiddenIds(ids);
+      }
+      renderMessages();
+    }
+
+    function clearLocalHidden() {
+      if (!confirm('确定清空本地删除记录吗？之前删除的消息会重新显示。')) return;
+      setHiddenIds([]);
+      renderMessages();
+    }
+
+    function getPreview(msg) {
+      if (msg.recalled) return '该消息已撤回';
+      if (msg.type === 'text') return (msg.content || '').slice(0, 40);
+      if (msg.type === 'image') return '[图片]';
+      if (msg.type === 'emoji') return '[表情]';
+      return '[消息]';
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    $('messageInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendText();
+      }
+    });
+
+    if (nickname) {
+      showApp();
+    } else {
+      showNicknamePage();
+    }
+  </script>
+</body>
+</html>

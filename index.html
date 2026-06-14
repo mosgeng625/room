@@ -6,280 +6,452 @@
   <title>LiteChat 公共聊天室</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * {
-      box-sizing: border-box;
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #dbeafe, #f8fafc);
+    color: #111827;
+  }
+
+  .app {
+    max-width: 1180px;
+    height: 100vh;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    background: #f1f5f9;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    box-shadow: 0 0 30px rgba(15, 23, 42, 0.08);
+  }
+
+  .topbar {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px;
+    background: linear-gradient(135deg, #0f172a, #1e3a8a);
+    color: white;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.18);
+    z-index: 2;
+  }
+
+  .brand {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+  }
+
+  .status {
+    margin-top: 3px;
+    font-size: 12px;
+    color: #bfdbfe;
+  }
+
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+
+  .user span {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 6px 10px;
+    border-radius: 999px;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 12px;
+    padding: 8px 13px;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+    font-size: 14px;
+    transition: all 0.18s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+  }
+
+  .btn.secondary {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
+  .btn.danger {
+    background: #ef4444;
+    color: white;
+  }
+
+  .btn.small {
+    padding: 5px 9px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .chat {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .side {
+    width: 270px;
+    border-left: 1px solid #e5e7eb;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .side h3 {
+    margin: 0 0 8px;
+    font-size: 17px;
+  }
+
+  .side p {
+    line-height: 1.6;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 20px;
+    background:
+      radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 32%),
+      radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.08), transparent 30%),
+      #f1f5f9;
+  }
+
+  .msg-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .msg-row.me {
+    flex-direction: row-reverse;
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: white;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  }
+
+  .avatar.me-avatar {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  }
+
+  .avatar.other-avatar {
+    background: linear-gradient(135deg, #475569, #0f172a);
+  }
+
+  .msg-stack {
+    max-width: 70%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .msg-row.me .msg-stack {
+    align-items: flex-end;
+  }
+
+  .msg-row.other .msg-stack {
+    align-items: flex-start;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .msg-row.me .meta {
+    flex-direction: row-reverse;
+  }
+
+  .role-badge {
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .role-badge.me {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .role-badge.other {
+    background: #e2e8f0;
+    color: #334155;
+  }
+
+  .sender-name {
+    font-weight: 700;
+    color: #334155;
+  }
+
+  .time {
+    color: #94a3b8;
+  }
+
+  .bubble {
+    position: relative;
+    padding: 11px 13px;
+    border-radius: 16px;
+    word-break: break-word;
+    line-height: 1.55;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  }
+
+  .bubble.me-bubble {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    color: white;
+    border-bottom-right-radius: 5px;
+  }
+
+  .bubble.other-bubble {
+    background: white;
+    color: #0f172a;
+    border: 1px solid #e5e7eb;
+    border-bottom-left-radius: 5px;
+  }
+
+  .bubble.me-bubble::after {
+    content: "";
+    position: absolute;
+    right: -6px;
+    bottom: 6px;
+    border-left: 8px solid #3b82f6;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+  }
+
+  .bubble.other-bubble::after {
+    content: "";
+    position: absolute;
+    left: -6px;
+    bottom: 6px;
+    border-right: 8px solid white;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+  }
+
+  .content {
+    font-size: 15px;
+    white-space: pre-wrap;
+  }
+
+  .quote {
+    border-left: 3px solid #94a3b8;
+    background: rgba(148, 163, 184, 0.18);
+    padding: 7px 9px;
+    border-radius: 9px;
+    font-size: 12px;
+    margin-bottom: 8px;
+    color: #475569;
+  }
+
+  .me-bubble .quote {
+    background: rgba(255, 255, 255, 0.18);
+    color: #e0f2fe;
+    border-left-color: #bfdbfe;
+  }
+
+  .chat-img {
+    max-width: 240px;
+    max-height: 240px;
+    border-radius: 13px;
+    display: block;
+    margin-top: 4px;
+    cursor: pointer;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    opacity: 0.35;
+    transition: opacity 0.15s ease;
+  }
+
+  .msg-stack:hover .actions {
+    opacity: 1;
+  }
+
+  .msg-row.me .actions {
+    justify-content: flex-end;
+  }
+
+  .recalled {
+    color: #64748b;
+    font-style: italic;
+    font-size: 14px;
+  }
+
+  .me-bubble .recalled {
+    color: #dbeafe;
+  }
+
+  .composer {
+    border-top: 1px solid #e5e7eb;
+    padding: 13px;
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  .quote-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 8px 10px;
+    margin-bottom: 9px;
+    font-size: 13px;
+    color: #475569;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 9px;
+  }
+
+  textarea {
+    flex: 1;
+    resize: none;
+    height: 50px;
+    border: 1px solid #cbd5e1;
+    border-radius: 14px;
+    padding: 11px 12px;
+    font-size: 15px;
+    outline: none;
+    background: #f8fafc;
+  }
+
+  textarea:focus {
+    border-color: #2563eb;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  .emoji-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+    margin-top: 12px;
+  }
+
+  .emoji-item {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: transform 0.16s ease;
+  }
+
+  .emoji-item:hover {
+    transform: scale(1.04);
+  }
+
+  .nickname-page {
+    height: 100vh;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #dbeafe, #f8fafc);
+  }
+
+  .nickname-card {
+    width: 380px;
+    background: white;
+    border-radius: 22px;
+    padding: 26px;
+    box-shadow: 0 16px 42px rgba(15, 23, 42, 0.16);
+  }
+
+  .nickname-card h1 {
+    margin: 0 0 8px;
+    font-size: 25px;
+  }
+
+  .nickname-card p {
+    margin: 0 0 18px;
+    color: #64748b;
+    font-size: 14px;
+  }
+
+  .nickname-card input {
+    width: 100%;
+    height: 45px;
+    border-radius: 13px;
+    border: 1px solid #cbd5e1;
+    padding: 0 13px;
+    font-size: 15px;
+    outline: none;
+    margin-bottom: 13px;
+  }
+
+  @media (max-width: 760px) {
+    .side {
+      display: none;
     }
 
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-      background: #eef2f7;
-      color: #111827;
-    }
-
-    .app {
-      max-width: 1100px;
-      height: 100vh;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      background: #f8fafc;
-      border-left: 1px solid #e5e7eb;
-      border-right: 1px solid #e5e7eb;
+    .msg-stack {
+      max-width: 78%;
     }
 
     .topbar {
-      height: 58px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 18px;
-      background: #111827;
-      color: white;
-    }
-
-    .brand {
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    .user {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-    }
-
-    .btn {
-      border: none;
-      border-radius: 10px;
-      padding: 8px 12px;
-      cursor: pointer;
-      background: #2563eb;
-      color: white;
-      font-size: 14px;
-    }
-
-    .btn.secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .btn.danger {
-      background: #ef4444;
-      color: white;
-    }
-
-    .btn.small {
-      padding: 4px 8px;
-      border-radius: 8px;
-      font-size: 12px;
-    }
-
-    .chat {
-      flex: 1;
-      display: flex;
-      min-height: 0;
-    }
-
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    .side {
-      width: 250px;
-      border-left: 1px solid #e5e7eb;
-      background: white;
-      padding: 14px;
-      overflow-y: auto;
-    }
-
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 18px;
-    }
-
-    .msg-row {
-      display: flex;
-      margin-bottom: 14px;
-    }
-
-    .msg-row.me {
-      justify-content: flex-end;
-    }
-
-    .bubble {
-      max-width: 68%;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: white;
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
-      word-break: break-word;
-    }
-
-    .msg-row.me .bubble {
-      background: #dbeafe;
-    }
-
-    .meta {
-      font-size: 12px;
-      color: #64748b;
-      margin-bottom: 5px;
-    }
-
-    .quote {
-      border-left: 3px solid #94a3b8;
-      background: rgba(148, 163, 184, 0.16);
-      padding: 6px 8px;
-      border-radius: 8px;
-      font-size: 12px;
-      margin-bottom: 8px;
-      color: #475569;
-    }
-
-    .content {
-      font-size: 15px;
-      line-height: 1.55;
-      white-space: pre-wrap;
+      padding: 0 12px;
     }
 
     .chat-img {
-      max-width: 220px;
-      max-height: 220px;
-      border-radius: 10px;
-      display: block;
-      margin-top: 4px;
-      cursor: pointer;
+      max-width: 190px;
+      max-height: 190px;
     }
 
-    .actions {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-      flex-wrap: wrap;
-    }
-
-    .recalled {
-      color: #64748b;
-      font-style: italic;
-      font-size: 14px;
-    }
-
-    .composer {
-      border-top: 1px solid #e5e7eb;
-      padding: 12px;
-      background: white;
-    }
-
-    .quote-bar {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      background: #f1f5f9;
-      border-radius: 10px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
-      font-size: 13px;
-      color: #475569;
-    }
-
-    .input-row {
-      display: flex;
-      gap: 8px;
-    }
-
-    textarea {
-      flex: 1;
-      resize: none;
-      height: 48px;
-      border: 1px solid #cbd5e1;
+    .avatar {
+      width: 34px;
+      height: 34px;
       border-radius: 12px;
-      padding: 10px;
-      font-size: 15px;
-      outline: none;
     }
-
-    textarea:focus {
-      border-color: #2563eb;
-    }
-
-    .emoji-list {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .emoji-item {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      object-fit: cover;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      cursor: pointer;
-    }
-
-    .nickname-page {
-      height: 100vh;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #dbeafe, #f8fafc);
-    }
-
-    .nickname-card {
-      width: 360px;
-      background: white;
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15);
-    }
-
-    .nickname-card h1 {
-      margin: 0 0 8px;
-      font-size: 24px;
-    }
-
-    .nickname-card p {
-      margin: 0 0 18px;
-      color: #64748b;
-      font-size: 14px;
-    }
-
-    .nickname-card input {
-      width: 100%;
-      height: 44px;
-      border-radius: 12px;
-      border: 1px solid #cbd5e1;
-      padding: 0 12px;
-      font-size: 15px;
-      outline: none;
-      margin-bottom: 12px;
-    }
-
-    .status {
-      font-size: 12px;
-      color: #94a3b8;
-    }
-
-    @media (max-width: 760px) {
-      .side {
-        display: none;
-      }
-
-      .bubble {
-        max-width: 82%;
-      }
-
-      .topbar {
-        padding: 0 12px;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 
 <body>
@@ -442,72 +614,74 @@
     }
 
     function renderMessages() {
-      const box = $('messages');
-      const hiddenIds = getHiddenIds();
-      const visibleMessages = messagesCache.filter(m => !hiddenIds.includes(m.id));
+  const box = $('messages');
+  const hiddenIds = getHiddenIds();
+  const visibleMessages = messagesCache.filter(m => !hiddenIds.includes(m.id));
 
-      box.innerHTML = visibleMessages.map(m => {
-        const isMe = m.sender_client_id === clientId;
-        const time = new Date(m.created_at).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+  box.innerHTML = visibleMessages.map(m => {
+    const isMe = m.sender_client_id === clientId;
+    const time = new Date(m.created_at).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
 
-        let body = '';
+    let body = '';
 
-        if (m.recalled) {
-          body = `<div class="recalled">该消息已撤回</div>`;
-        } else if (m.type === 'text') {
-          body = `<div class="content">${escapeHtml(m.content || '')}</div>`;
-        } else if (m.type === 'image' || m.type === 'emoji') {
-          body = `<img class="chat-img" src="${m.image_url}" onclick="window.open('${m.image_url}', '_blank')" />`;
-        }
+    if (m.recalled) {
+      body = `<div class="recalled">该消息已撤回</div>`;
+    } else if (m.type === 'text') {
+      body = `<div class="content">${escapeHtml(m.content || '')}</div>`;
+    } else if (m.type === 'image' || m.type === 'emoji') {
+      body = `<img class="chat-img" src="${m.image_url}" onclick="window.open('${m.image_url}', '_blank')" />`;
+    }
 
-        const quote = m.quote_preview
-          ? `<div class="quote">引用 ${escapeHtml(m.quote_sender_name || '')}：${escapeHtml(m.quote_preview || '')}</div>`
-          : '';
+    const quote = m.quote_preview
+      ? `<div class="quote">引用 ${escapeHtml(m.quote_sender_name || '')}：${escapeHtml(m.quote_preview || '')}</div>`
+      : '';
 
-        const imageActions = (!m.recalled && (m.type === 'image' || m.type === 'emoji'))
-          ? `<button class="btn small secondary" onclick="saveEmoji('${m.image_url}')">存表情</button>`
-          : '';
+    const imageActions = (!m.recalled && (m.type === 'image' || m.type === 'emoji'))
+      ? `<button class="btn small secondary" onclick="saveEmoji('${m.image_url}')">存表情</button>`
+      : '';
 
-        const recallAction = isMe && !m.recalled
-          ? `<button class="btn small secondary" onclick="recallMessage('${m.id}')">撤回</button>`
-          : '';
+    const recallAction = isMe && !m.recalled
+      ? `<button class="btn small secondary" onclick="recallMessage('${m.id}')">撤回</button>`
+      : '';
 
-        return `
-          <div class="msg-row ${isMe ? 'me' : ''}">
-            <div class="bubble">
-              <div class="meta">${escapeHtml(m.sender_name)} · ${time}</div>
-              ${quote}
-              ${body}
-              <div class="actions">
-                <button class="btn small secondary" onclick="quoteById('${m.id}')">引用</button>
-                ${imageActions}
-                ${recallAction}
-                <button class="btn small danger" onclick="hideMessage('${m.id}')">删除</button>
-              </div>
-            </div>
+    const avatarText = getAvatarText(m.sender_name);
+    const rowClass = isMe ? 'me' : 'other';
+    const bubbleClass = isMe ? 'me-bubble' : 'other-bubble';
+    const avatarClass = isMe ? 'me-avatar' : 'other-avatar';
+    const roleText = isMe ? '我' : '对方';
+
+    return `
+      <div class="msg-row ${rowClass}">
+        <div class="avatar ${avatarClass}">${avatarText}</div>
+
+        <div class="msg-stack">
+          <div class="meta">
+            <span class="role-badge ${rowClass}">${roleText}</span>
+            <span class="sender-name">${escapeHtml(m.sender_name)}</span>
+            <span class="time">${time}</span>
           </div>
-        `;
-      }).join('');
 
-      box.scrollTop = box.scrollHeight;
-    }
+          <div class="bubble ${bubbleClass}">
+            ${quote}
+            ${body}
+          </div>
 
-    async function sendText() {
-      const input = $('messageInput');
-      const text = input.value.trim();
-      if (!text) return;
+          <div class="actions">
+            <button class="btn small secondary" onclick="quoteById('${m.id}')">引用</button>
+            ${imageActions}
+            ${recallAction}
+            <button class="btn small danger" onclick="hideMessage('${m.id}')">删除</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 
-      await sendMessage({
-        type: 'text',
-        content: text,
-        image_url: null
-      });
-
-      input.value = '';
-    }
+  box.scrollTop = box.scrollHeight;
+}
 
     async function sendMessage(payload) {
       const row = {
